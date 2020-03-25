@@ -25,9 +25,9 @@ func main() {
 
 func usage() {
 	fmt.Println(strings.TrimSpace(`
-usage: gembed <action>
+usage: zap <action>
 
-There are three recognised actions in gembed:
+There are three recognised actions in zap:
 
 init	Creates the root level package with functions for being able to
 	read data from the embedded files.
