@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"zap"
 )
 
 func main() {
@@ -12,10 +13,19 @@ func main() {
 		action = os.Args[1]
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("error getting current directory: %s", err.Error())
+		os.Exit(1)
+	}
+
 	switch action {
 	case "init":
+		zap.OperationInit(wd)
 	case "build":
+		zap.OperationBuild(wd)
 	case "stub":
+		zap.OperationStub(wd)
 	case "help", "":
 		usage()
 	default:
