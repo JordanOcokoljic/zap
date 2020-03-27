@@ -19,20 +19,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch action {
-	case "init":
-		zap.OperationInit(wd)
-	case "build":
-		zap.OperationBuild(wd)
-	case "stub":
-		zap.OperationStub(wd)
-	case "help", "":
-		usage()
-	default:
-		fmt.Printf("option: %s not recognised\n", action)
+	err = run(action, wd)
+	if err != nil {
+		fmt.Printf("an error occured: %s", err.Error())
+		os.Exit(1)
 	}
 }
 
+// run takes the action provided in the command line, and the current working
+// directory as determined by the program and executes the specified operation.
+func run(action string, wd string) error {
+	var err error
+
+	switch action {
+	case "init":
+		err = zap.OperationInit(wd)
+	case "build":
+		err = zap.OperationBuild(wd)
+	case "stub":
+		err = zap.OperationStub(wd)
+	case "help", "":
+		usage()
+	default:
+		err = fmt.Errorf("action %s not recognized", action)
+	}
+
+	return err
+}
+
+// usage prints out the usage guide explaining how Zap should be called.
 func usage() {
 	fmt.Println(strings.TrimSpace(`
 usage: zap <action>
