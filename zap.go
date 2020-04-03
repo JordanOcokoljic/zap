@@ -1,9 +1,11 @@
 package zap
 
 import (
+	"go/ast"
 	"go/build"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // GetPackagesInProject will return the package in the current directory, as
@@ -35,4 +37,24 @@ func GetPackagesInProject(wd string, skip []string) ([]*build.Package, error) {
 
 	err := filepath.Walk(wd, fn)
 	return packages, err
+}
+
+// getZappedImportName returns the name the Zapped library was imported under,
+// returning empty string if it is not imported.
+func getZappedImportName(file *ast.File) string {
+	var name string
+
+	for _, imp := range file.Imports {
+		if strings.HasSuffix(imp.Path.Value, "zapped\"") {
+			name = "zapped"
+
+			if imp.Name != nil {
+				name = imp.Name.Name
+			}
+
+			break
+		}
+	}
+
+	return name
 }
