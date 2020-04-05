@@ -216,3 +216,21 @@ func main() {
 		})
 	}
 }
+
+func TestCorrectlyPathResources(t *testing.T) {
+	resources := []Resource{
+		{Key: "KEY1", Path: "scripts/"},
+		{Key: "KEY2", Path: "sql/"},
+		{Key: "KEY3", Path: "html/"},
+	}
+
+	fixed := CorrectlyPathResources("project/", resources)
+
+	expected := []Resource{
+		{Key: "KEY1", Path: "project/scripts/"},
+		{Key: "KEY2", Path: "project/sql/"},
+		{Key: "KEY3", Path: "project/html/"},
+	}
+
+	assertResourceSliceMatch(t, expected, fixed)
+}
