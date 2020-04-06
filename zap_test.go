@@ -3,6 +3,7 @@ package zap
 import (
 	"errors"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"reflect"
@@ -46,7 +47,7 @@ func assertResourceSliceMatch(t *testing.T, exp []Resource, act []Resource) {
 
 	for i := range exp {
 		expected := exp[i]
-		actual := exp[i]
+		actual := act[i]
 
 		if expected.Key != actual.Key || expected.Path != actual.Path {
 			t.Error("Slices did not match")
@@ -233,4 +234,22 @@ func TestCorrectlyPathResources(t *testing.T) {
 	}
 
 	assertResourceSliceMatch(t, expected, fixed)
+}
+
+func TestGetResourcesInPackage(t *testing.T) {
+	pkg, err := build.ImportDir("testdata/", 0)
+	if err != nil {
+		t.Fatalf("an error occured: %s", err.Error())
+	}
+
+	resources, err := GetResourcesInPackage(pkg)
+	if err != nil {
+		t.Fatalf("an error occured: %s", err.Error())
+	}
+
+	expected := []Resource{
+		{Key: "KEY", Path: "testdata/PATH/"},
+	}
+
+	assertResourceSliceMatch(t, expected, resources)
 }

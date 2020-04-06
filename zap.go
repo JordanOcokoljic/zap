@@ -29,6 +29,16 @@ func (ag *aggregateError) Add(err error) {
 	ag.errors = append(ag.errors, err)
 }
 
+// SafeReturn will check if there are any errors in the slice and return the
+// error if there are. If there aren't, nil will be returned.
+func (ag aggregateError) SafeReturn() error {
+	if len(ag.errors) != 0 {
+		return ag
+	}
+
+	return nil
+}
+
 // Returns the value of the aggregateError, which is just a big collection of
 // all the other errors. Fulfils the Error interface.
 func (ag aggregateError) Error() string {
@@ -55,6 +65,11 @@ func GetPackagesInProject(wd string) ([]*build.Package, error) {
 	fn := func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			return nil
+		}
+
+		// Respecting the Go tools ignoring this directory.
+		if info.Name() == "testdata" {
+			return filepath.SkipDir
 		}
 
 		pkg, err := build.ImportDir(path, 0)
@@ -223,27 +238,7 @@ func parse(f *ast.File, fset *token.FileSet, imp string) ([]Resource, error) {
 		return true
 	})
 
-	if errors.Error() != "" {
-		return resources, errors
-	}
-
-	return resources, nil
-}
-
-// CorrectlyPathResources takes a collection of resources that have relative
-// paths, and fills them in with their full path based on the parent package
-// of the file they were pulled out of.
-func CorrectlyPathResources(pkgPath string, base []Resource) []Resource {
-	var resources []Resource
-
-	for _, res := range base {
-		resources = append(resources, Resource{
-			Key:  res.Key,
-			Path: filepath.Join(pkgPath, res.Path),
-		})
-	}
-
-	return resources
+	return resources, errors.SafeReturn()
 }
 
 // GetResourcesInFile will parse through a file, and identify all calls to
@@ -264,4 +259,44 @@ func GetResourcesInFile(fpath string) ([]Resource, error) {
 	}
 
 	return parse(f, fset, importName)
+}
+
+// CorrectlyPathResources takes a collection of resources that have relative
+// paths, and fills them in with their full path based on the parent package
+// of the file they were pulled out of.
+func CorrectlyPathResources(pkgPath string, base []Resource) []Resource {
+	var resources []Resource
+
+	for _, res := range base {
+		resources = append(resources, Resource{
+			Key:  res.Key,
+			Path: filepath.Join(pkgPath, res.Path),
+		})
+	}
+
+	return resources
+}
+
+// GetResourcesInPackage will return a slice of Resources that are correctly
+// pathed.
+func GetResourcesInPackage(pkg *build.Package) ([]Resource, error) {
+	var resources []Resource
+	var errors aggregateError
+
+	for _, file := range pkg.GoFiles {
+		if file == "zap.embed.go" {
+			continue
+		}
+
+		fpath := filepath.Join(pkg.Dir, file)
+		res, err := GetResourcesInFile(fpath)
+		if err != nil {
+			errors.Add(err)
+			continue
+		}
+
+		resources = append(resources, CorrectlyPathResources(pkg.Dir, res)...)
+	}
+
+	return resources, errors.SafeReturn()
 }
