@@ -206,8 +206,8 @@ func parse(f *ast.File, fset *token.FileSet, imp string) ([]Resource, error) {
 				return NilState
 			}
 
-			res := resources[len(resources)-1]
-			res.Path = node.Value
+			res := &resources[len(resources)-1]
+			res.Path = node.Value[1 : len(node.Value)-1]
 			return NilState
 		}
 
