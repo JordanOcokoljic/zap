@@ -331,7 +331,7 @@ func EmbedDirectories(resources []Resource) (map[string]*Directory, error) {
 			// In case someone has version controlled the folder they store
 			// embeddable assets in - stops the tool getting stuck on this
 			// potentially massive file.
-			if file.Name() == ".git" {
+			if file.Name() == ".git" || file.Name() == "zap.embed.go" {
 				continue
 			}
 
