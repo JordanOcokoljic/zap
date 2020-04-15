@@ -6,6 +6,7 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,6 +55,13 @@ func (ag aggregateError) Error() string {
 	}
 
 	return str
+}
+
+// Directory represents an embedded directory. Only the absolute paths of the
+// subdirectories are stored so that they are not embedded mulitple times.
+type Directory struct {
+	SubDirs []string
+	Files   map[string][]byte
 }
 
 // GetPackagesInProject will return the package in the current directory, as
@@ -299,4 +307,73 @@ func GetResourcesInPackage(pkg *build.Package) ([]Resource, error) {
 	}
 
 	return resources, errors.SafeReturn()
+}
+
+// EmbedDirectories will return a map of directories containg the contents of
+// the files within them.
+func EmbedDirectories(resources []Resource) (map[string]*Directory, error) {
+	var errors aggregateError
+
+	dirs := make(map[string]*Directory)
+
+	var dfn func(string) (*Directory, error)
+	dfn = func(dpath string) (*Directory, error) {
+		var dnfErrors aggregateError
+		dir := Directory{}
+		dir.Files = make(map[string][]byte)
+
+		files, err := ioutil.ReadDir(dpath)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, file := range files {
+			// In case someone has version controlled the folder they store
+			// embeddable assets in - stops the tool getting stuck on this
+			// potentially massive file.
+			if file.Name() == ".git" {
+				continue
+			}
+
+			fpath := filepath.Join(dpath, file.Name())
+
+			switch file.IsDir() {
+			case true:
+				subdir, err := dfn(fpath)
+				if err != nil {
+					dnfErrors.Add(err)
+					continue
+				}
+
+				dirs[fpath] = subdir
+				dir.SubDirs = append(dir.SubDirs, fpath)
+			case false:
+				bytes, err := ioutil.ReadFile(fpath)
+				if err != nil {
+					dnfErrors.Add(err)
+					continue
+				}
+
+				dir.Files[file.Name()] = bytes
+			}
+		}
+
+		return &dir, dnfErrors.SafeReturn()
+	}
+
+	for _, res := range resources {
+		if _, exists := dirs[res.Path]; exists {
+			continue
+		}
+
+		dir, err := dfn(res.Path)
+		if err != nil {
+			errors.Add(err)
+			continue
+		}
+
+		dirs[res.Path] = dir
+	}
+
+	return dirs, errors.SafeReturn()
 }

@@ -6,6 +6,8 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,6 +15,11 @@ import (
 
 func assertStringSliceMatch(t *testing.T, expected []string, actual []string) {
 	t.Helper()
+
+	if len(expected)+len(actual) == 0 {
+		return
+	}
+
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("Expected %v got %v", expected, actual)
 	}
@@ -53,6 +60,29 @@ func assertResourceSliceMatch(t *testing.T, exp []Resource, act []Resource) {
 			t.Error("Slices did not match")
 			return
 		}
+	}
+}
+
+func assertInt(t *testing.T, expected, actual int) {
+	if expected != actual {
+		t.Errorf("expected %d, but got %d", expected, actual)
+	}
+}
+
+func getWd(t *testing.T) string {
+	t.Helper()
+
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	return wd
+}
+
+func endIfFailed(t *testing.T) {
+	if t.Failed() {
+		t.FailNow()
 	}
 }
 
@@ -252,4 +282,117 @@ func TestGetResourcesInPackage(t *testing.T) {
 	}
 
 	assertResourceSliceMatch(t, expected, resources)
+}
+
+func TestEmbedDirectories(t *testing.T) {
+	// Because this test interacts with the filesystem, these ensure that the
+	// test will use the correct files and have the correct paths, no matter
+	// which machine it is being run from.
+	wd := getWd(t)
+	rel := func(path string) string {
+		return filepath.Join(wd, path)
+	}
+
+	dirs, err := EmbedDirectories([]Resource{{"A", rel("testdata")}})
+	if err != nil {
+		t.Fatalf("an error occured: %s", err.Error())
+	}
+
+	// If it didn't manage to get all the directories, fail it now to avoid
+	// having memory panics.
+	assertInt(t, 3, len(dirs))
+	endIfFailed(t)
+
+	type file struct {
+		name string
+		body string
+	}
+
+	tests := []struct {
+		name    string
+		path    string
+		subdirs []string
+		files   []file
+	}{
+		{
+			name:    "testdata",
+			path:    rel("testdata"),
+			subdirs: []string{rel("testdata/accounting")},
+			files: []file{
+				{
+					name: "testdata.go",
+					body: `
+package testdata
+
+import (
+	"zap/zapped"
+)
+
+func main() {
+	zapped.Resource("KEY", "PATH/")
+}
+`,
+				},
+			},
+		},
+		{
+			name:    "accounting",
+			path:    rel("testdata/accounting"),
+			subdirs: []string{rel("testdata/accounting/clients")},
+			files: []file{
+				{
+					name: "data.txt",
+					body: `
+AccountName: jordanockoljic
+Balance: 143.50`,
+				},
+			},
+		},
+		{
+			name:    "clients",
+			path:    rel("testdata/accounting/clients"),
+			subdirs: []string{},
+			files: []file{
+				{
+					name: "a.txt",
+					body: `
+AccountName: A
+Balance: 243512.34`,
+				},
+				{
+					name: "b.txt",
+					body: `
+AccountName: B
+Balance: 748362.34`,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(s *testing.T) {
+			dir := dirs[test.path]
+
+			// Check if the number of files embedded, matches the number of
+			// files expected to be embedded.
+			assertInt(s, len(test.files), len(dir.Files))
+			endIfFailed(s)
+
+			// Check that the subdirectories that have been embedded are the
+			// ones we expect.
+			assertStringSliceMatch(t, test.subdirs, dir.SubDirs)
+
+			// Check that the files are what we expect.
+			for _, file := range test.files {
+				expected := strings.TrimLeft(file.body, "\n")
+
+				var actual string
+				if emb, ok := dir.Files[file.name]; ok {
+					actual = string(emb)
+				}
+
+				assertString(s, expected, actual)
+			}
+		})
+	}
 }
