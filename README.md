@@ -62,5 +62,5 @@ Zap itself is licensed under the GPLv3 license. However, because it both copies
 a portion of its code (contained in `zapped/zapped.go`) as well as generating
 code and placing it into projects that use it, an exception has been made to 
 allow projects that contain those files to still be distributed under any terms
-that projects maintainer chooses. If you have any questions around this, or are
-unsure if you can use Zap, please do not hesitiate to contact me.
+that project's maintainer chooses. If you have any questions around this, or
+are unsure if you can use Zap, please do not hesitiate to contact me.
