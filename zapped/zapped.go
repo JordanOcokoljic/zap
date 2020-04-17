@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // As an exception, you may distribute programs that contain code generated
-// with or copied into by Zap under terms of your choice.
+// with or copied into by this program under terms of your choice.
 
 package zapped
 
