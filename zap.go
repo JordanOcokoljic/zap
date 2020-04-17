@@ -386,7 +386,7 @@ func EmbedDirectories(resources []Resource) (map[string]*Directory, error) {
 // GenerateCode will return a slice of bytes containing the code that should be
 // written so that file contents can be accessed within the binary. The output
 // has been run through the Go formatter.
-func GenerateCode(dirs map[string]*Directory, devMode bool) (string, error) {
+func GenerateCode(dirs map[string]*Directory, devMode bool) ([]byte, error) {
 	var buf bytes.Buffer
 	var sortedDirs []string
 	var errors aggregateError
@@ -457,7 +457,7 @@ func init() {
 	{{ $dir.Hash }}.directories["{{ $path }}"] = &{{ $hash }}
 	{{- end -}}
 	{{ range $name, $body := $dir.Files }}
-	{{ $dir.Hash }}.files["{{ $name }}"] = {{ printf "%#v" $body }}
+	{{ $dir.Hash }}.files["{{ $name }}"] = File{ {{ printf "%#v" $body }} }
 	{{- end }}
 {{ end -}}
 }
@@ -470,5 +470,5 @@ func init() {
 		errors.Add(err)
 	}
 
-	return string(formatted), errors.SafeReturn()
+	return formatted, errors.SafeReturn()
 }
