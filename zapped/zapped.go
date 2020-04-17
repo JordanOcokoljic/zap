@@ -19,18 +19,18 @@ func (file *File) String() string {
 
 // A Directory represents an embedded directory.
 type Directory struct {
-	files       map[string]*File
 	directories map[string]*Directory
+	files       map[string]File
 }
 
 // File searches for a File with a name that matches the provided one. If a
 // file with the provided name cannot be found, an error will be returned.
-func (dir *Directory) File(name string) (*File, error) {
+func (dir *Directory) File(name string) (File, error) {
 	file, ok := dir.files[name]
 
 	if !ok {
 		err := fmt.Errorf("a file with name %s could not be found", name)
-		return nil, err
+		return File{}, err
 	}
 
 	return file, nil

@@ -1,15 +1,20 @@
 package zap
 
 import (
+	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"text/template"
 )
 
 // Resource is used to track each unique Key passed to a call to Resource() and
@@ -376,4 +381,86 @@ func EmbedDirectories(resources []Resource) (map[string]*Directory, error) {
 	}
 
 	return dirs, errors.SafeReturn()
+}
+
+// GenerateCode will return a slice of bytes containing the code that should be
+// written so that file contents can be accessed within the binary. The output
+// has been run through the Go formatter.
+func GenerateCode(dirs map[string]*Directory) (string, error) {
+	var buf bytes.Buffer
+	var sortedDirs []string
+	var errors aggregateError
+	hashMap := make(map[string]string)
+
+	for dpath := range dirs {
+		sortedDirs = append(sortedDirs, dpath)
+	}
+
+	sort.Slice(sortedDirs, func(i, j int) bool {
+		ic := strings.Count(sortedDirs[i], string(os.PathSeparator))
+		jc := strings.Count(sortedDirs[j], string(os.PathSeparator))
+		return ic > jc
+	})
+
+	type TmplData struct {
+		Name  string
+		Hash  string
+		Files map[string][]byte
+		Dirs  map[string]string
+	}
+
+	var data []TmplData
+	for _, path := range sortedDirs {
+		dir := dirs[path]
+		hash := fmt.Sprintf("_%x", sha1.Sum([]byte(path)))
+		hashMap[path] = hash
+
+		dt := TmplData{
+			Name:  path,
+			Hash:  hash,
+			Files: dir.Files,
+			Dirs:  make(map[string]string),
+		}
+
+		for _, subd := range dir.SubDirs {
+			tpath, err := filepath.Rel(path, subd)
+			if err != nil {
+				errors.Add(err)
+				continue
+			}
+
+			dt.Dirs[tpath] = hashMap[subd]
+		}
+
+		data = append(data, dt)
+	}
+
+	tmpl := template.Must(template.New("tmpl").Parse(strings.TrimSpace(`
+package zapped
+	
+func init() {
+{{- range $dir := . }}
+	// {{ $dir.Name }}
+	{{ $dir.Hash }} := Directory{
+		directories: make(map[string]*Directory),
+		files: make(map[string]File),
+	}
+	{{ range $path, $hash := $dir.Dirs }}
+	{{ $dir.Hash }}.directories["{{ $path }}"] = &{{ $hash }}
+	{{- end -}}
+	{{ range $name, $body := $dir.Files }}
+	{{ $dir.Hash }}.files["{{ $name }}"] = {{ printf "%#v" $body }}
+	{{- end }}
+{{ end -}}
+}
+`)))
+
+	tmpl.Execute(&buf, data)
+
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		errors.Add(err)
+	}
+
+	return string(formatted), errors.SafeReturn()
 }
