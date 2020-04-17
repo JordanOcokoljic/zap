@@ -33,7 +33,7 @@ func main() {
 	// Check if the zapped directory exists, if it doesn't, create it. Relies
 	// on the fact that if the directory already exists, Mkdir is a no-op.
 	zappedPath := filepath.Join(wd, "zapped")
-	os.Mkdir(zappedPath, os.ModeDir)
+	os.Mkdir(zappedPath, os.ModePerm)
 
 	// Refresh the zapped library with the most recent version.
 	zappedResource, err := zapped.Resource("ZAP_RESOURCE", "../zapped")

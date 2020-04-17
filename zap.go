@@ -65,6 +65,7 @@ func (ag aggregateError) Error() string {
 // Directory represents an embedded directory. Only the absolute paths of the
 // subdirectories are stored so that they are not embedded mulitple times.
 type Directory struct {
+	Key     string
 	SubDirs []string
 	Files   map[string][]byte
 }
@@ -377,6 +378,7 @@ func EmbedDirectories(resources []Resource) (map[string]*Directory, error) {
 			continue
 		}
 
+		dir.Key = res.Key
 		dirs[res.Path] = dir
 	}
 
@@ -405,6 +407,7 @@ func GenerateCode(dirs map[string]*Directory, devMode bool) ([]byte, error) {
 	type TmplDir struct {
 		Name  string
 		Hash  string
+		Key   string
 		Files map[string][]byte
 		Dirs  map[string]string
 	}
@@ -424,6 +427,7 @@ func GenerateCode(dirs map[string]*Directory, devMode bool) ([]byte, error) {
 		dt := TmplDir{
 			Name:  path,
 			Hash:  hash,
+			Key:   dir.Key,
 			Files: dir.Files,
 			Dirs:  make(map[string]string),
 		}
@@ -459,6 +463,7 @@ func init() {
 	{{ range $name, $body := $dir.Files }}
 	{{ $dir.Hash }}.files["{{ $name }}"] = File{ {{ printf "%#v" $body }} }
 	{{- end }}
+	{{ if ne $dir.Key "" }} resources["{{ $dir.Key }}"] = &{{ $dir.Hash }} {{ end }}
 {{ end -}}
 }
 `)))
