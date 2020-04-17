@@ -445,7 +445,9 @@ func init() {
 `
 
 	wd := getWd(t)
-	expected := strings.ReplaceAll(strings.TrimLeft(expTmpl, "\n"), "%PROJECTPATH%", wd)
+	expected := strings.ReplaceAll(
+		strings.TrimLeft(expTmpl, "\n"),
+		"%PROJECTPATH%", wd)
 
 	resources := []Resource{
 		{Key: "F", Path: filepath.Join(wd, "testdata")},
