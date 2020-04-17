@@ -13,7 +13,9 @@ import (
 	"testing"
 )
 
-func assertStringSliceMatch(t *testing.T, expected []string, actual []string) {
+// assertStringSliceMatch will assert the actual provided string slice matches
+// the expected one. Currently uses reflect.DeepEqual.
+func assertStringSliceMatch(t *testing.T, expected, actual []string) {
 	t.Helper()
 
 	if len(expected)+len(actual) == 0 {
@@ -25,13 +27,17 @@ func assertStringSliceMatch(t *testing.T, expected []string, actual []string) {
 	}
 }
 
-func assertString(t *testing.T, expected string, actual string) {
+// assertString will assert that the actual string matches the expected string.
+func assertString(t *testing.T, expected, actual string) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %s got %s", expected, actual)
 	}
 }
 
+// parseGo will parse a provided string of Go code and parse it, returning the
+// ast.File and token.FileSet. If an error occurs in this process, the test is
+// failed.
 func parseGo(t *testing.T, src string) (*ast.File, *token.FileSet) {
 	t.Helper()
 
@@ -44,7 +50,9 @@ func parseGo(t *testing.T, src string) (*ast.File, *token.FileSet) {
 	return file, fset
 }
 
-func assertResourceSliceMatch(t *testing.T, exp []Resource, act []Resource) {
+// assertResourceSliceMatch will assert that the actual slice of resources
+// matches the expected one.
+func assertResourceSliceMatch(t *testing.T, exp, act []Resource) {
 	t.Helper()
 
 	if len(exp) != len(act) {
@@ -63,12 +71,15 @@ func assertResourceSliceMatch(t *testing.T, exp []Resource, act []Resource) {
 	}
 }
 
+// assertInt will assert that the actual int provided matches the expected one.
 func assertInt(t *testing.T, expected, actual int) {
 	if expected != actual {
 		t.Errorf("expected %d, but got %d", expected, actual)
 	}
 }
 
+// getWd will return the current working directory the test resides in, if an
+// error occurs as the working directory is fetched, the test is failed.
 func getWd(t *testing.T) string {
 	t.Helper()
 
@@ -80,6 +91,8 @@ func getWd(t *testing.T) string {
 	return wd
 }
 
+// endIfFailed will check if the test has been marked as failing, and terminate
+// it early if it has.
 func endIfFailed(t *testing.T) {
 	if t.Failed() {
 		t.FailNow()
