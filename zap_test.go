@@ -415,6 +415,8 @@ func TestGenerateCode(t *testing.T) {
 package zapped
 
 func init() {
+	developmentMode = false
+
 	// %PROJECTPATH%/testdata/accounting/clients
 	_7c0f43becbec3fcc411fb2eb4cf6781c8938c80c := Directory{
 		directories: make(map[string]*Directory),
@@ -458,7 +460,7 @@ func init() {
 		t.Fatal(err.Error())
 	}
 
-	code, err := GenerateCode(dirs)
+	code, err := GenerateCode(dirs, false)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

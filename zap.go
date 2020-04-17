@@ -386,7 +386,7 @@ func EmbedDirectories(resources []Resource) (map[string]*Directory, error) {
 // GenerateCode will return a slice of bytes containing the code that should be
 // written so that file contents can be accessed within the binary. The output
 // has been run through the Go formatter.
-func GenerateCode(dirs map[string]*Directory) (string, error) {
+func GenerateCode(dirs map[string]*Directory, devMode bool) (string, error) {
 	var buf bytes.Buffer
 	var sortedDirs []string
 	var errors aggregateError
@@ -402,20 +402,26 @@ func GenerateCode(dirs map[string]*Directory) (string, error) {
 		return ic > jc
 	})
 
-	type TmplData struct {
+	type TmplDir struct {
 		Name  string
 		Hash  string
 		Files map[string][]byte
 		Dirs  map[string]string
 	}
 
-	var data []TmplData
+	type TmplData struct {
+		DevMode bool
+		Dirs    []TmplDir
+	}
+
+	tmplData := TmplData{DevMode: devMode}
+
 	for _, path := range sortedDirs {
 		dir := dirs[path]
 		hash := fmt.Sprintf("_%x", sha1.Sum([]byte(path)))
 		hashMap[path] = hash
 
-		dt := TmplData{
+		dt := TmplDir{
 			Name:  path,
 			Hash:  hash,
 			Files: dir.Files,
@@ -432,14 +438,16 @@ func GenerateCode(dirs map[string]*Directory) (string, error) {
 			dt.Dirs[tpath] = hashMap[subd]
 		}
 
-		data = append(data, dt)
+		tmplData.Dirs = append(tmplData.Dirs, dt)
 	}
 
 	tmpl := template.Must(template.New("tmpl").Parse(strings.TrimSpace(`
 package zapped
 	
 func init() {
-{{- range $dir := . }}
+	developmentMode = {{ printf "%t" .DevMode }}
+
+{{ range $dir := .Dirs }}
 	// {{ $dir.Name }}
 	{{ $dir.Hash }} := Directory{
 		directories: make(map[string]*Directory),
@@ -455,7 +463,7 @@ func init() {
 }
 `)))
 
-	tmpl.Execute(&buf, data)
+	tmpl.Execute(&buf, tmplData)
 
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
