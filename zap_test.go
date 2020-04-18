@@ -277,7 +277,7 @@ func main() {
 	}
 }
 
-func TestcorrectlyPathResources(t *testing.T) {
+func TestCorrectlyPathResources(t *testing.T) {
 	resources := []Resource{
 		{Key: "KEY1", Path: "scripts/"},
 		{Key: "KEY2", Path: "sql/"},
