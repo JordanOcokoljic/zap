@@ -271,10 +271,10 @@ func parse(f *ast.File, fset *token.FileSet, imp string) ([]Resource, error) {
 	return resources, errors.SafeReturn()
 }
 
-// GetResourcesInFile will parse through a file, and identify all calls to
+// getResourcesInFile will parse through a file, and identify all calls to
 // Resource(), it will return a slice of Boxes so that Zap and pack these into
 // Go source.
-func GetResourcesInFile(fpath string) ([]Resource, error) {
+func getResourcesInFile(fpath string) ([]Resource, error) {
 	var resources []Resource
 
 	fset := token.NewFileSet()
@@ -291,10 +291,10 @@ func GetResourcesInFile(fpath string) ([]Resource, error) {
 	return parse(f, fset, importName)
 }
 
-// CorrectlyPathResources takes a collection of resources that have relative
+// correctlyPathResources takes a collection of resources that have relative
 // paths, and fills them in with their full path based on the parent package
 // of the file they were pulled out of.
-func CorrectlyPathResources(pkgPath string, base []Resource) []Resource {
+func correctlyPathResources(pkgPath string, base []Resource) []Resource {
 	var resources []Resource
 
 	for _, res := range base {
@@ -319,13 +319,13 @@ func GetResourcesInPackage(pkg *build.Package) ([]Resource, error) {
 		}
 
 		fpath := filepath.Join(pkg.Dir, file)
-		res, err := GetResourcesInFile(fpath)
+		res, err := getResourcesInFile(fpath)
 		if err != nil {
 			errors.Add(err)
 			continue
 		}
 
-		resources = append(resources, CorrectlyPathResources(pkg.Dir, res)...)
+		resources = append(resources, correctlyPathResources(pkg.Dir, res)...)
 	}
 
 	return resources, errors.SafeReturn()

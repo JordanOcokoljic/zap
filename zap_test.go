@@ -277,14 +277,14 @@ func main() {
 	}
 }
 
-func TestCorrectlyPathResources(t *testing.T) {
+func TestcorrectlyPathResources(t *testing.T) {
 	resources := []Resource{
 		{Key: "KEY1", Path: "scripts/"},
 		{Key: "KEY2", Path: "sql/"},
 		{Key: "KEY3", Path: "html/"},
 	}
 
-	fixed := CorrectlyPathResources("project/", resources)
+	fixed := correctlyPathResources("project/", resources)
 
 	expected := []Resource{
 		{Key: "KEY1", Path: "project/scripts"},
