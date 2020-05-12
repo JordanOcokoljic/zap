@@ -4,7 +4,8 @@ read from the filesystem, so that you don't need to wait for files to be
 embedded to test your application.
 
 ## Building Zap
-Zap requires Zap. To build Zap from source, clone the repo and then:
+Zap is built with [Go](https://golang.org/). Zap requires Zap. To build Zap
+from source, clone the repo and then:
 ``` bash
 go run cmd/main.go
 go build -o zap cmd/main.go
