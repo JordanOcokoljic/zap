@@ -109,6 +109,30 @@ func (dir *Directory) Directory(name string) (*Directory, error) {
 	return directory, nil
 }
 
+// Files returns the names of all files embedded into the Directory sorted in
+// alphabetical order.
+func (dir *Directory) Files() []string {
+	var files []string
+
+	for fname := range dir.files {
+		files = append(files, fname)
+	}
+
+	return files
+}
+
+// Directories returns the names of all directories embedded into the Directory
+// sorted in alphabetical order.
+func (dir *Directory) Directories() []string {
+	var directories []string
+
+	for dname := range dir.directories {
+		directories = append(directories, dname)
+	}
+
+	return directories
+}
+
 // resources is used to store all of the directories that are embedded within
 // the application. The string used to refer to them is the Key provided to the
 // call to Resource().
